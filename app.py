@@ -4,9 +4,13 @@ import json
 import dbcreds
 from flask_cors import CORS
 import random
+import os
+from PIL import Image
+from resizeimage import resizeimage
 
 app = Flask(__name__)
 CORS(app)
+APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 @app.route('/api/artwork', methods=['GET', 'POST', 'PATCH', 'DELETE'])
 def artwork():
@@ -533,3 +537,51 @@ def visitor():
                 return Response("Delete account success!", mimetype="text/html", status=204)
             else:
                 return Response("Something went wrong!", mimetype="text/html", status=500)
+
+@app.route('/api/upload', methods=["POST", "DELETE"])
+def upload():
+    if  request.method == "POST":
+        target = os.path.join(APP_ROOT, '/var/www/MVPproject/Artistwebsite-frontend/dist/img/uploadimage')   
+        if not os.path.isdir(target):
+            os.mkdir(target)
+        files = request.files.getlist("file")
+        for file in files:
+            # print(file)        
+            filename = file.filename
+            destination = "/".join([target, filename])
+            print(destination)
+            file.save(destination)
+            image = Image.open(destination)
+            if image.width > 1280 and image.height < 1280:
+                with open(destination, 'r+b') as f:
+                    with Image.open(f) as image:
+                        cover = resizeimage.resize_width(image, 1280)
+                        cover.save(destination, image.format)
+            elif image.width < 1280 and image.height > 1280:
+                with open(destination, 'r+b') as f:
+                    with Image.open(f) as image:
+                        cover = resizeimage.resize_height(image, 1280)
+                        cover.save(destination, image.format)
+            elif image.width > 1280 and image.height > 1280:
+                with open(destination, 'r+b') as f:
+                    with Image.open(f) as image:
+                        cover = resizeimage.resize_cover(image, [1280,1280])
+                        cover.save(destination, image.format)
+        return Response(json.dumps(destination, default=str), mimetype="application/json", status=204)
+    if __name__=="__main__":
+        app.run(port=4555,debug=True)
+
+    if  request.method == "DELETE":
+        image = request.json.get("image")
+        print(image)
+        path = "/var/www/MVPproject/Artistwebsite-frontend/dist/img/uploadimage/"
+        image_path = path+image
+        print(image_path)
+        if os.path.exists(image_path):
+            os.remove(image_path)
+            if os.path.exists(image_path):
+                return Response("Delete went wrong!", mimetype="text/html", status=500)
+            else:
+                return Response("Delete sucess", mimetype="application/json", status=200) 
+        else:
+            print("The file does not exist")
