@@ -1,5 +1,5 @@
 import mariadb
-from flask import Flask, request, Response
+from flask import Flask, request, Response, render_template
 import json
 import dbcreds
 from flask_cors import CORS
