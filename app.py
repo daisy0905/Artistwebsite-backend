@@ -20,11 +20,23 @@ def artwork():
         artworks = None
         content = request.args.get("content")
         art_id = request.args.get("id")
+        offset_value = request.args.get("offset_value")
+        print(offset_value)
         print(art_id)
         try:
             conn = mariadb.connect(user=dbcreds.user, password=dbcreds.password, port=dbcreds.port, database=dbcreds.database, host=dbcreds.host)
             cursor = conn.cursor()
-            if art_id != None and art_id != "":
+            if offset_value != None and offset_value != "":
+                cursor.execute("SELECT * FROM artwork ORDER BY completed_at DESC LIMIT 6 OFFSET ?", [offset_value,])
+                rows = cursor.fetchall()
+                print(rows)
+                artworks = []
+                headers = [i[0] for i in cursor.description]
+                for row in rows:
+                    artwork = dict(zip(headers, row))
+                    artworks.append(artwork)
+                print(artworks)
+            elif art_id != None and art_id != "":
                 cursor.execute("SELECT * FROM artwork WHERE id=?", [art_id,])
                 rows = cursor.fetchall()
                 artworks = []
